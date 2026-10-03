@@ -3,6 +3,7 @@ const express = require("express");
 const proxy = require("express-http-proxy");
 const cors = require("cors");
 const helmet = require("helmet");
+const authMiddleware = require("./middleware/auth-middleware");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -26,6 +27,7 @@ const proxyOptions = {
 
 app.use(
   "/v1/design",
+  authMiddleware,
   proxy(process.env.DESIGN, {
     ...proxyOptions,
   })
@@ -33,14 +35,18 @@ app.use(
 
 app.use(
   "/v1/media",
+  authMiddleware,
   proxy(process.env.UPLOAD, {
     ...proxyOptions,
     parseReqBody: false,
   })
 );
 
+/* Some extra logic we need to handle later */
+
 app.use(
   "/v1/subscription",
+  authMiddleware,
   proxy(process.env.SUBSCRIPTION, {
     ...proxyOptions,
     parseReqBody: false,
