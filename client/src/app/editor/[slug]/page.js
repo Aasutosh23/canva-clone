@@ -1,5 +1,7 @@
 "use client";
 
+import MainEditor from "@/components/editor";
+
 export default function EditorPage() {
- return <div>Editor-Page</div>;
+  return <MainEditor />;
 }

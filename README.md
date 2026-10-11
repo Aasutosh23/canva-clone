@@ -43,7 +43,7 @@ graph TD
     end
 
     subgraph Microservices Layer
-        ProxyRouter -->|/v1/design/*| DesignSvc[Design Service :5001]
+        ProxyRouter -->|/v1/designs/*| DesignSvc[Design Service :5001]
         ProxyRouter -->|/v1/media/*| UploadSvc[Upload Service :5002]
         ProxyRouter -->|/v1/subscription/*| SubSvc[Subscription Service :5003]
     end
@@ -110,11 +110,18 @@ graph TD
 ├── client/                     # Next.js 15 Frontend
 │   ├── src/
 │   │   ├── app/                # App Router (pages: /, /editor/[slug], /login)
-│   │   ├── auth/               # NextAuth setup and configuration
-│   │   ├── components/         # Reusable UI, banner, sidebar, header components
+│   │   ├── auth/               # NextAuth setup and auto-refresh configuration
+│   │   ├── components/         # UI Components
+│   │   │   ├── editor/         # Canvas Editor (canvas, header, sidebar, index)
+│   │   │   ├── home/           # Dashboard (banner, recent-designs, sidebar, etc.)
+│   │   │   └── ui/             # Reusable UI primitives (buttons, modals, etc.)
 │   │   ├── config/             # Preset sizes, colors, fonts, and brush options
-│   │   ├── fabric/             # Fabric.js canvas wrappers and event listeners
-│   │   └── lib/                # Utility helpers
+│   │   ├── fabric/             # Fabric.js canvas utilities and centering logic
+│   │   ├── lib/                # Utility helpers
+│   │   ├── middleware.js       # Route protection middleware
+│   │   ├── providers/          # Context and Session providers
+│   │   ├── services/           # API services (base-service, design-service)
+│   │   └── store/              # Zustand global state (canvas & editor store)
 │   ├── package.json
 │   └── .env
 │
@@ -164,6 +171,7 @@ Create `.env` files in each relevant folder based on the templates below:
 AUTH_SECRET=your_auth_secret_key
 AUTH_GOOGLE_ID=your_google_oauth_client_id.apps.googleusercontent.com
 AUTH_GOOGLE_SECRET=your_google_oauth_client_secret
+API_URL=http://localhost:5000
 ```
 
 ### 2. `server/api-gateway/.env`
@@ -263,11 +271,11 @@ Open [http://localhost:3000](http://localhost:3000) in your browser to access th
 
 All client communication passes through the API Gateway on `http://localhost:5000` with an `Authorization: Bearer <Google_ID_Token>` header:
 
-| Gateway Route        | Target Service                 | Downstream Base | Purpose                                              |
-| :------------------- | :----------------------------- | :-------------- | :--------------------------------------------------- |
-| `/v1/design/*`       | Design Service (`:5001`)       | `/api/*`        | Create, list, fetch, edit, and delete canvas designs |
-| `/v1/media/*`        | Upload Service (`:5002`)       | `/api/*`        | Upload and retrieve images & media assets            |
-| `/v1/subscription/*` | Subscription Service (`:5003`) | `/api/*`        | Manage subscriptions, tiers, and user billing        |
+| Gateway Route        | Target Service                 | Downstream Base       | Purpose                                              |
+| :------------------- | :----------------------------- | :-------------------- | :--------------------------------------------------- |
+| `/v1/designs/*`      | Design Service (`:5001`)       | `/api/designs/*`      | Create, list, fetch, edit, and delete canvas designs |
+| `/v1/media/*`        | Upload Service (`:5002`)       | `/api/media/*`        | Upload and retrieve images & media assets            |
+| `/v1/subscription/*` | Subscription Service (`:5003`) | `/api/subscription/*` | Manage subscriptions, tiers, and user billing        |
 
 ---
 

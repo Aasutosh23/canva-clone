@@ -15,7 +15,7 @@ app.use(express.urlencoded({ extended: true }));
 
 const proxyOptions = {
   proxyReqPathResolver: (req) => {
-    return req.originalUrl.replace(/^\v1/, "/api");
+    return req.originalUrl.replace(/^\/v1/, "/api");
   },
   proxyErrorHandler: (err, res, next) => {
     res.status(500).json({
@@ -26,7 +26,7 @@ const proxyOptions = {
 };
 
 app.use(
-  "/v1/design",
+  "/v1/designs",
   authMiddleware,
   proxy(process.env.DESIGN, {
     ...proxyOptions,
