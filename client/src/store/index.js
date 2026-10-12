@@ -1,6 +1,7 @@
 "use client";
 
 import { create } from "zustand";
+import { centerCanvas } from "@/fabric/fabric-utils";
 
 export const useEditorStore = create((set, get) => ({
   canvas: null,
@@ -9,5 +10,15 @@ export const useEditorStore = create((set, get) => ({
     if (canvas) {
       centerCanvas(canvas);
     }
+  },
+
+  designId: null,
+  setDesignId: (id) => set({ designId: id }),
+
+  resetStore: () => {
+    set({
+      canvas: null,
+      designId: null,
+    });
   },
 }));

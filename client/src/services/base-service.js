@@ -1,7 +1,7 @@
 import axios from "axios";
 import { getSession, signOut } from "next-auth/react";
 
-const API_URL = process.env.API_URL || "http://localhost:5000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 export async function fetchWithAuth(endpoint, options = {}) {
   const session = await getSession();

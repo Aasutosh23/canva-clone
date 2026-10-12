@@ -29,13 +29,11 @@ async function authMiddleware(req, res, next) {
     };
 
     /* Add this userId to headers for downstream services */
-
     req.headers["x-user-id"] = payload["sub"];
 
-    /* This two are optionals */
-
-    req.headers["x-user-email"] = payload["email"];
-    req.headers["x-user-name"] = payload["name"];
+    /* Only set optional headers if values are defined — undefined header values cause Node.js to throw */
+    if (payload["email"]) req.headers["x-user-email"] = payload["email"];
+    if (payload["name"]) req.headers["x-user-name"] = payload["name"];
 
     next();
   } catch (err) {
