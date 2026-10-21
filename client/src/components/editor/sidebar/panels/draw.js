@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { brushSizes, drawingPanelColorPresets } from "@/config";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
+import { toggleDrawingMode, toggleEraseMode, updateDrawingBrush } from "@/fabric/fabric-utils";
 
 function DrawingPanel() {
   const { canvas } = useEditorStore();
@@ -44,12 +45,21 @@ function DrawingPanel() {
   }, [canvas, isDrawingMode, drawingColor, brushWidth, drawingOpacity]);
 
   const handleToggleDrawingMode = () => {
-    setIsDrawingMode((previous) => !previous);
+    if (!canvas) return;
+
+    const newMode = !isDrawingMode;
+    setIsDrawingMode(newMode);
+
+    toggleDrawingMode(canvas, newMode, drawingColor, brushWidth);
   };
 
   const handleDrawingColorChange = (color) => {
     if (/^#[0-9a-fA-F]{6}$/.test(color)) {
       setDrawingColor(color);
+    }
+
+    if (canvas && isDrawingMode && !isErasing) {
+      updateDrawingBrush(canvas, { color });
     }
   };
 
@@ -60,6 +70,10 @@ function DrawingPanel() {
     if (!Number.isFinite(width)) return;
 
     setBrushWidth(Math.min(30, Math.max(1, width)));
+
+    if (canvas && isDrawingMode) {
+      updateDrawingBrush(canvas, { width: isErasing ? width * 2 : width });
+    }
   };
 
   const handleDrawingOpacityChange = (value) => {
@@ -69,11 +83,18 @@ function DrawingPanel() {
     if (!Number.isFinite(opacity)) return;
 
     setDrawingOpacity(Math.min(100, Math.max(1, opacity)));
+
+    if (canvas && isDrawingMode) {
+      updateDrawingBrush(canvas, { opacity: opacity / 100 });
+    }
   };
 
   const handleToggleErasing = () => {
+    if (!canvas && !isDrawingMode) return;
     const newErasing = !isErasing;
     setIsErasing(newErasing);
+
+    toggleEraseMode(canvas, newErasing, drawingColor, brushWidth * 2);
   };
 
   return (
