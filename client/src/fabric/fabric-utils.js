@@ -112,47 +112,48 @@ export const addImageToCanvas = async (canvas, imageUrl) => {
   if (!canvas) return null;
 
   try {
-    const { Image: FabricImage } = await import("fabric");
+    const fabricModule = await import("fabric");
+    const fabric = fabricModule.fabric || fabricModule.default;
 
-    let imgObj = new Image();
-    imgObj.crossOrigin = "Anonymous";
-    imgObj.src = imageUrl;
+    const imgObj = new window.Image();
+    imgObj.crossOrigin = "anonymous";
 
-    return new Promise((resolve, reject) => {
-      imgObj.onload = () => {
-        let image = new FabricImage(imgObj);
-        image.set({
-          id: `image-${Date.now()}`,
-          top: 100,
-          left: 100,
-          padding: 10,
-          cornorSize: 10,
-        });
+    await new Promise((resolve, reject) => {
+      imgObj.onload = resolve;
+      imgObj.onerror = () => reject(new Error(`Failed to load image: ${imageUrl}`));
 
-        const maxDimension = 400;
-
-        if (image.width > maxDimension || image.height > maxDimension) {
-          if (image.width > image.height) {
-            const scale = maxDimension / image.width;
-            image.scale(scale);
-          } else {
-            const scale = maxDimension / image.height;
-            image.scale(scale);
-          }
-        }
-
-        canvas.add(image);
-        canvas.setActiveObject(image);
-        canvas.renderAll();
-        resolve(image);
-      };
-
-      imgObj.onerror = () => {
-        reject(new Error("Failed to load image", imageUrl));
-      };
+      imgObj.src = imageUrl;
     });
+
+    const image = new fabric.Image(imgObj);
+
+    image.set({
+      id: `image-${Date.now()}`,
+      top: 100,
+      left: 100,
+      padding: 10,
+      cornerSize: 10,
+    });
+
+    const maxDimension = 400;
+
+    if (image.width > maxDimension || image.height > maxDimension) {
+      image.scaleToWidth(
+        image.width >= image.height ? maxDimension : (image.width * maxDimension) / image.height
+      );
+
+      if (image.height > maxDimension) {
+        image.scaleToHeight(maxDimension);
+      }
+    }
+
+    canvas.add(image);
+    canvas.setActiveObject(image);
+    canvas.requestRenderAll();
+
+    return image;
   } catch (error) {
-    console.error("Error adding image");
+    console.error("Error adding image to canvas:", error);
     return null;
   }
 };

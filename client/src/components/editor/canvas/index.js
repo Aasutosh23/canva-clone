@@ -13,12 +13,37 @@ function Canvas() {
   const { setCanvas } = useEditorStore();
 
   useEffect(() => {
+    const handleKeyDown = (e) => {
+      const isDeleteKey = e.key === "Delete" || e.key === "Backspace";
+      if (!isDeleteKey) return;
+
+      const tag = document.activeElement?.tagName?.toLowerCase();
+      const isEditing =
+        tag === "input" || tag === "textarea" || document.activeElement?.isContentEditable;
+      if (isEditing) return;
+
+      const canvas = fabricCanvasRef.current;
+      if (!canvas) return;
+
+      const activeObjects = canvas.getActiveObjects();
+      if (!activeObjects || activeObjects.length === 0) return;
+
+      activeObjects.forEach((obj) => canvas.remove(obj));
+      canvas.discardActiveObject();
+      canvas.renderAll();
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  useEffect(() => {
     const cleanUpCanvas = () => {
       if (fabricCanvasRef.current) {
         try {
           fabricCanvasRef.current.dispose();
         } catch (error) {
-          console.error("Error disposing canvas", e);
+          console.error("Error disposing canvas", error);
         }
 
         fabricCanvasRef.current = null;

@@ -17,4 +17,9 @@ const uploadMediaToCloudinary = async (file) => {
   return result;
 };
 
-module.exports = { uploadMediaToCloudinary };
+const deleteMediaFromCloudinary = async (cloudinaryId) => {
+  const result = await cloudinary.uploader.destroy(cloudinaryId);
+  return result;
+};
+
+module.exports = { uploadMediaToCloudinary, deleteMediaFromCloudinary };

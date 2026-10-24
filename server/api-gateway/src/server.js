@@ -83,7 +83,7 @@ app.use(
 );
 
 app.use(
-  "/v1/media",
+  "/v1/media/upload",
   authMiddleware,
   proxy(process.env.UPLOAD, {
     ...proxyOptions,
@@ -91,7 +91,14 @@ app.use(
   })
 );
 
-/* Some extra logic we need to handle later */
+app.use(
+  "/v1/media",
+  authMiddleware,
+  proxy(process.env.UPLOAD, {
+    ...proxyOptions,
+    parseReqBody: true,
+  })
+);
 
 app.use(
   "/v1/subscription",

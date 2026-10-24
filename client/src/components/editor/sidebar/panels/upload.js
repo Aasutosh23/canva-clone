@@ -2,9 +2,10 @@
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { addImageToCanvas } from "@/fabric/fabric-utils";
 import { fetchWithAuth, uploadFileWithAuth } from "@/services/base-service";
 import { useEditorStore } from "@/store";
-import { Loader2, Upload } from "lucide-react";
+import { Loader2, Trash2, Upload } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useCallback, useEffect, useState } from "react";
 
@@ -14,6 +15,7 @@ function UploadPanel() {
   const [isUploading, setIsUploading] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [userUploads, setUserUploads] = useState([]);
+  const [deletingIds, setDeletingIds] = useState(new Set());
 
   const { data: session, status } = useSession();
   const fetchUserUploads = useCallback(async () => {
@@ -57,6 +59,27 @@ function UploadPanel() {
 
   const handleAddImage = (imageUrl) => {
     if (!canvas) return;
+    addImageToCanvas(canvas, imageUrl);
+  };
+
+  const handleDeleteUpload = async (e, imageId) => {
+    e.stopPropagation(); // prevent triggering handleAddImage
+    if (deletingIds.has(imageId)) return;
+
+    setDeletingIds((prev) => new Set(prev).add(imageId));
+
+    try {
+      await fetchWithAuth(`/v1/media/delete/${imageId}`, { method: "DELETE" });
+      setUserUploads((prev) => prev.filter((img) => img._id !== imageId));
+    } catch (err) {
+      console.error("Error deleting upload:", err);
+    } finally {
+      setDeletingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(imageId);
+        return next;
+      });
+    }
   };
 
   console.log(userUploads, "userUploads");
@@ -90,14 +113,28 @@ function UploadPanel() {
             <div className="grid grid-cols-3 gap-4">
               {userUploads.map((imageData) => (
                 <div
-                  className="aspect-auto bg-gray-50 rounded-md overflow-hidden hover:opacity-85 transition-opacity relative group"
+                  className="aspect-auto bg-gray-50 rounded-md overflow-hidden hover:opacity-85 transition-opacity relative group cursor-pointer"
                   key={imageData._id}
+                  onClick={() => handleAddImage(imageData.url)}
                 >
                   <img
                     src={imageData.url}
                     alt={imageData.name}
                     className="w-full h-full object-cover"
                   />
+                  {/* Delete button — shown on hover */}
+                  <button
+                    onClick={(e) => handleDeleteUpload(e, imageData._id)}
+                    disabled={deletingIds.has(imageData._id)}
+                    className="absolute top-1 right-1 bg-black hover:bg-gray-800 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
+                    title="Delete upload"
+                  >
+                    {deletingIds.has(imageData._id) ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="w-4 h-4" />
+                    )}
+                  </button>
                 </div>
               ))}
             </div>
