@@ -122,7 +122,6 @@
   body {
     @apply bg-background text-foreground;
   }
-
 }
 
 /* Header gradient background */
@@ -178,7 +177,9 @@
   background-color: white;
   border-right: 1px solid #e6e6e6;
   position: relative;
-  transition: width 0.3s ease, opacity 0.3s ease;
+  transition:
+    width 0.3s ease,
+    opacity 0.3s ease;
   z-index: 5;
 }
 
@@ -293,7 +294,9 @@
   opacity: 0;
   transform: translateX(-10px);
   pointer-events: none;
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
   z-index: 100;
   overflow-y: auto; /* Allow scrolling if content is too tall */
 }

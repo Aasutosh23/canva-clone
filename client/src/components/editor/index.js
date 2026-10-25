@@ -7,6 +7,7 @@ import Sidebar from "./sidebar";
 import { useCallback, useEffect, useState } from "react";
 import { useEditorStore } from "@/store";
 import { getUserDesignById } from "@/services/design-service";
+import Properties from "./properties";
 
 function MainEditor() {
   const params = useParams();
@@ -17,7 +18,8 @@ function MainEditor() {
   const [loadAttempted, setLoadAttempted] = useState(false);
   const [error, setError] = useState(null);
 
-  const { canvas, setDesignId, resetStore, setName } = useEditorStore();
+  const { canvas, setDesignId, resetStore, setName, setShowProperties, showProperties, isEditing } =
+    useEditorStore();
 
   useEffect(() => {
     resetStore();
@@ -129,11 +131,37 @@ function MainEditor() {
     }
   }, [canvas, designId, loadDesign, loadAttempted, router]);
 
+  useEffect(() => {
+    if (!canvas) return;
+
+    const handleSelectionCreated = () => {
+      const activeObject = canvas.getActiveObject();
+
+      if (activeObject) {
+        setShowProperties(true);
+      }
+    };
+
+    const handleSelectionCleared = () => {
+      setShowProperties(false);
+    };
+
+    canvas.on("selection:created", handleSelectionCreated);
+    canvas.on("selection:updated", handleSelectionCreated);
+    canvas.on("selection:cleared", handleSelectionCleared);
+
+    return () => {
+      canvas.off("selection:created", handleSelectionCreated);
+      canvas.off("selection:updated", handleSelectionCreated);
+      canvas.off("selection:cleared", handleSelectionCleared);
+    };
+  }, [canvas]);
+
   return (
     <div className="flex flex-col h-screen overflow-hidden">
       <Header />
       <div className="flex flex-1 overflow-hidden">
-        <Sidebar />
+        {isEditing && <Sidebar />}
         <div className="flex-1 flex flex-col overflow-hidden relative">
           <main
             className="flex-1 overflow-hidden bg-[#f0f0f0] flex items-center 
@@ -143,6 +171,7 @@ function MainEditor() {
           </main>
         </div>
       </div>
+      {showProperties && isEditing && <Properties />}
     </div>
   );
 }
