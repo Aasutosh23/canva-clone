@@ -171,7 +171,7 @@ function MainEditor() {
           </main>
         </div>
       </div>
-      {showProperties && isEditing && <Properties />}
+      {isEditing && <Properties />}
     </div>
   );
 }

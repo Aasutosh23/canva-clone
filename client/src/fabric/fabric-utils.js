@@ -219,3 +219,57 @@ export const updateDrawingBrush = (canvas, properties = {}) => {
     return false;
   }
 };
+
+export const cloneSelectedObject = async (canvas) => {
+  if (!canvas) return null;
+
+  const activeObject = canvas.getActiveObject();
+  if (!activeObject) return null;
+
+  try {
+    const clonedObj = await new Promise((resolve) => {
+      activeObject.clone(resolve, ["id"]);
+    });
+
+    clonedObj.set({
+      left: activeObject.left + 10,
+      top: activeObject.top + 10,
+      id: `${activeObject.type || "object"}-${Date.now()}`,
+    });
+
+    if (clonedObj.type === "activeSelection") {
+      clonedObj.canvas = canvas;
+      clonedObj.forEachObject((obj) => canvas.add(obj));
+      clonedObj.setCoords();
+    } else {
+      canvas.add(clonedObj);
+    }
+
+    canvas.setActiveObject(clonedObj);
+    canvas.requestRenderAll();
+
+    return clonedObj;
+  } catch (e) {
+    console.error("Error while cloning", e);
+    return null;
+  }
+};
+
+export const deletedSelectedObject = async (canvas) => {
+  if (!canvas) return;
+
+  const activeObject = canvas.getActiveObject();
+
+  if (!activeObject) return;
+
+  try {
+    canvas.remove(activeObject);
+    canvas.discardActiveObject();
+    canvas.renderAll();
+
+    return true;
+  } catch (e) {
+    console.error("Error while deleting", e);
+    return false;
+  }
+};
