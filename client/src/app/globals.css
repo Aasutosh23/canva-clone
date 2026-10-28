@@ -118,9 +118,14 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    font-family: "Comic Sans MS", cursive;
+    font-weight: 500;
   }
+
   body {
     @apply bg-background text-foreground;
+    font-family: "Comic Sans MS", cursive;
+    font-weight: 500;
   }
 }
 

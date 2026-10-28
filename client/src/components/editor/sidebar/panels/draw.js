@@ -2,7 +2,16 @@
 
 import { Button } from "@/components/ui/button";
 import { useEditorStore } from "@/store";
-import { Droplets, EraserIcon, Minus, Paintbrush, Palette, PencilIcon, Plus } from "lucide-react";
+import {
+  Droplets,
+  EraserIcon,
+  Minus,
+  Paintbrush,
+  Palette,
+  PencilIcon,
+  Plus,
+  Sparkles,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
@@ -69,10 +78,13 @@ function DrawingPanel() {
 
     if (!Number.isFinite(width)) return;
 
-    setBrushWidth(Math.min(30, Math.max(1, width)));
+    const nextWidth = Math.min(30, Math.max(1, width));
+    setBrushWidth(nextWidth);
 
     if (canvas && isDrawingMode) {
-      updateDrawingBrush(canvas, { width: isErasing ? width * 2 : width });
+      updateDrawingBrush(canvas, {
+        width: isErasing ? nextWidth * 2 : nextWidth,
+      });
     }
   };
 
@@ -82,15 +94,17 @@ function DrawingPanel() {
 
     if (!Number.isFinite(opacity)) return;
 
-    setDrawingOpacity(Math.min(100, Math.max(1, opacity)));
+    const nextOpacity = Math.min(100, Math.max(1, opacity));
+    setDrawingOpacity(nextOpacity);
 
-    if (canvas && isDrawingMode) {
-      updateDrawingBrush(canvas, { opacity: opacity / 100 });
+    if (canvas && isDrawingMode && !isErasing) {
+      updateDrawingBrush(canvas, { opacity: nextOpacity / 100 });
     }
   };
 
   const handleToggleErasing = () => {
-    if (!canvas && !isDrawingMode) return;
+    if (!canvas || !isDrawingMode) return;
+
     const newErasing = !isErasing;
     setIsErasing(newErasing);
 
@@ -100,24 +114,113 @@ function DrawingPanel() {
   return (
     <div className="h-full overflow-y-auto p-4">
       <div className="space-y-5">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+            <PencilIcon className="h-5 w-5 text-primary" />
+          </div>
+
+          <div>
+            <h2 className="text-lg font-semibold">Draw</h2>
+            <p className="text-sm text-muted-foreground">
+              Create freehand drawings on your design.
+            </p>
+          </div>
+        </div>
+
         <Button
           variant={isDrawingMode ? "default" : "outline"}
-          className="group w-full py-6 transition-all"
+          className="w-full py-6 transition-all"
           size="lg"
           onClick={handleToggleDrawingMode}
+          disabled={!canvas}
         >
-          <PencilIcon
-            className={`mr-2 h-5 w-5 ${isDrawingMode ? "animate-bounce" : "hover:animate-bounce"}`}
-          />
-
+          <PencilIcon className="mr-2 h-5 w-5" />
           <span className="font-medium">
             {isDrawingMode ? "Exit Drawing Mode" : "Enter Drawing Mode"}
           </span>
         </Button>
 
+        {!isDrawingMode && (
+          <div className="space-y-4">
+            <div className="rounded-xl border bg-muted/20 p-4">
+              <div className="mb-3 flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                <h3 className="font-medium">Ready to draw?</h3>
+              </div>
+
+              <p className="text-sm leading-6 text-muted-foreground">
+                Select Enter Drawing Mode, then click and drag on the canvas to sketch. Customize
+                your color, brush size, and opacity below.
+              </p>
+
+              {!canvas && (
+                <p className="mt-3 text-sm text-destructive">
+                  The canvas is still loading. Drawing tools will be available when it is ready.
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-3 rounded-xl border p-4">
+              <h3 className="text-sm font-semibold">Current Brush</h3>
+
+              <div className="flex items-center gap-3">
+                <div
+                  className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border"
+                  style={{ backgroundColor: drawingColor }}
+                >
+                  <Paintbrush className="h-5 w-5 text-white drop-shadow" />
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium">{drawingColor}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {brushWidth}px brush · {drawingOpacity}% opacity
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Label className="text-sm">Quick colors</Label>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                {drawingPanelColorPresets.map((color) => (
+                  <button
+                    key={color}
+                    type="button"
+                    aria-label={`Choose ${color}`}
+                    aria-pressed={color === drawingColor}
+                    className={`h-8 w-8 rounded-full border transition-transform hover:scale-110 ${
+                      color === drawingColor ? "ring-2 ring-primary ring-offset-2" : ""
+                    }`}
+                    style={{ backgroundColor: color }}
+                    onClick={() => handleDrawingColorChange(color)}
+                  />
+                ))}
+              </div>
+
+              <div className="flex gap-2">
+                <Input
+                  type="color"
+                  value={drawingColor}
+                  onChange={(event) => handleDrawingColorChange(event.target.value)}
+                  className="h-10 w-12 cursor-pointer p-1"
+                />
+
+                <Input
+                  type="text"
+                  value={drawingColor}
+                  onChange={(event) => handleDrawingColorChange(event.target.value)}
+                  className="flex-1"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
         {isDrawingMode && (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="mb-4 grid grid-cols-3">
+            <TabsList className="mb-4 grid w-full grid-cols-3">
               <TabsTrigger value="colors">
                 <Palette className="mr-2 h-4 w-4" />
                 Colors
@@ -239,10 +342,10 @@ function DrawingPanel() {
               <Button
                 onClick={handleToggleErasing}
                 variant={isErasing ? "destructive" : "outline"}
-                className={"w-full py-6"}
+                className="w-full py-6"
                 size="lg"
               >
-                <EraserIcon className="mr-2 w-5 h-5" />
+                <EraserIcon className="mr-2 h-5 w-5" />
                 {isErasing ? "Stop Erasing" : "Eraser mode"}
               </Button>
             </TabsContent>
