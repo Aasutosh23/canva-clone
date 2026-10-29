@@ -17,10 +17,12 @@ import UploadPanel from "./panels/upload";
 import DrawingPanel from "./panels/draw";
 import SettingsPanel from "./panels/settings";
 import AIPanel from "./panels/ai";
+import { useEditorStore } from "@/store";
 
 function Sidebar() {
   const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
-  const [activeSidebar, setActiveSidebar] = useState(null);
+
+  const { activeSidebar, setActiveSidebar } = useEditorStore();
 
   const sidebarItems = [
     {
@@ -62,8 +64,10 @@ function Sidebar() {
   ];
 
   const handleItemClick = (id) => {
-    if (id === activeSidebar && !isPanelCollapsed) return;
-
+    if (id === activeSidebar && !isPanelCollapsed) {
+      setActiveSidebar(null);
+      return;
+    }
     setActiveSidebar(id);
     setIsPanelCollapsed(false);
   };

@@ -8,11 +8,13 @@ import { useCallback, useEffect, useState } from "react";
 import { useEditorStore } from "@/store";
 import { getUserDesignById } from "@/services/design-service";
 import Properties from "./properties";
+import { useSession } from "next-auth/react";
 
 function MainEditor() {
   const params = useParams();
   const router = useRouter();
   const designId = params?.slug;
+  const { data: session, status } = useSession();
 
   const [isLoading, setIsLoading] = useState(!!designId);
   const [loadAttempted, setLoadAttempted] = useState(false);
@@ -49,32 +51,32 @@ function MainEditor() {
     }
   }, [isLoading, canvas, designId]);
 
-  useEffect(() => {
-    if (canvas) {
-      console.log("Canvas is now available in editor");
-    }
-  }, [canvas]);
-
   const loadDesign = useCallback(async () => {
     if (!canvas || !designId || loadAttempted) return;
+    if (status !== "authenticated" || !session?.idToken) return;
+
     try {
       setIsLoading(true);
       setLoadAttempted(true);
 
       const response = await getUserDesignById(designId);
-      const design = response.data;
+      const design = response?.data;
 
       if (design) {
-        setName(design.name);
+        setName(design.name || "Untitled Design");
         setDesignId(designId);
+
+        const width = design.width || 825;
+        const height = design.height || 465;
+
+        canvas.setWidth(width);
+        canvas.setHeight(height);
 
         try {
           if (design.canvasData) {
             canvas.clear();
-            if (design.width && design.height) {
-              canvas.setWidth(design.width);
-              canvas.setHeight(design.height);
-            }
+            canvas.setWidth(width);
+            canvas.setHeight(height);
 
             const canvasData =
               typeof design.canvasData === "string"
@@ -91,45 +93,51 @@ function MainEditor() {
 
             if (!hasObjects) {
               canvas.renderAll();
+              useEditorStore.getState().triggerCenterCanvas();
               return;
             }
 
             canvas.loadFromJSON(design.canvasData, () => {
+              canvas.setWidth(width);
+              canvas.setHeight(height);
               canvas.renderAll();
+              useEditorStore.getState().triggerCenterCanvas();
             });
           } else {
-            console.log("no canvas data");
             canvas.clear();
-            if (design.width && design.height) {
-              canvas.setWidth(design.width);
-              canvas.setHeight(design.height);
-            }
+            canvas.setWidth(width);
+            canvas.setHeight(height);
             canvas.backgroundColor = "#ffffff";
             canvas.renderAll();
+            useEditorStore.getState().triggerCenterCanvas();
           }
         } catch (e) {
           console.error("Error loading canvas", e);
           setError("Error loading canvas");
         } finally {
           setIsLoading(false);
+          useEditorStore.getState().triggerCenterCanvas();
         }
       }
-
-      console.log(response);
     } catch (e) {
       console.error("Failed to load design", e);
-      setError("Failed to load design");
+      setLoadAttempted(false);
       setIsLoading(false);
     }
-  }, [canvas, designId, loadAttempted, setDesignId]);
+  }, [canvas, designId, loadAttempted, status, session?.idToken, setDesignId, setName]);
 
   useEffect(() => {
-    if (designId && canvas && !loadAttempted) {
-      loadDesign();
-    } else if (!designId) {
+    if (status === "loading") return;
+
+    if (status === "unauthenticated") {
       router.replace("/");
+      return;
     }
-  }, [canvas, designId, loadDesign, loadAttempted, router]);
+
+    if (status === "authenticated" && designId && canvas && !loadAttempted) {
+      loadDesign();
+    }
+  }, [canvas, designId, loadDesign, loadAttempted, status, router]);
 
   useEffect(() => {
     if (!canvas) return;
@@ -163,10 +171,7 @@ function MainEditor() {
       <div className="flex flex-1 overflow-hidden">
         {isEditing && <Sidebar />}
         <div className="flex-1 flex flex-col overflow-hidden relative">
-          <main
-            className="flex-1 overflow-hidden bg-[#f0f0f0] flex items-center 
-            justify-center"
-          >
+          <main className="flex-1 overflow-hidden bg-[#f0f0f0]">
             <Canvas />
           </main>
         </div>

@@ -13,12 +13,15 @@ import {
   FlipHorizontal,
   FlipVertical,
   Italic,
+  Lock,
+  Maximize2,
   MoveDown,
   MoveUp,
   Pin,
   PinOff,
   Trash,
   Underline,
+  X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
@@ -31,7 +34,7 @@ import {
 import { fontFamilies } from "@/config";
 
 function Properties() {
-  const { canvas } = useEditorStore();
+  const { canvas, markAsModified } = useEditorStore();
 
   const [selectedObject, setSelectedObject] = useState(null);
   const [objectType, setObjectType] = useState("");
@@ -193,6 +196,7 @@ function Properties() {
 
     selectedObject.set(property, value);
     canvas.requestRenderAll();
+    markAsModified();
   };
 
   const handleOpacityChange = (value) => {
@@ -208,12 +212,14 @@ function Properties() {
     if (!canvas || !selectedObject) return;
 
     await cloneSelectedObject(canvas);
+    markAsModified();
   };
 
   const handleDelete = () => {
     if (!canvas || !selectedObject) return;
 
     deletedSelectedObject(canvas);
+    markAsModified();
   };
 
   const handleBringToFront = () => {
@@ -221,6 +227,7 @@ function Properties() {
 
     canvas.bringToFront(selectedObject);
     canvas.requestRenderAll();
+    markAsModified();
   };
 
   const handleSendToBack = () => {
@@ -228,6 +235,7 @@ function Properties() {
 
     canvas.sendToBack(selectedObject);
     canvas.requestRenderAll();
+    markAsModified();
   };
 
   const handleFlipHorizontal = () => {
@@ -413,6 +421,7 @@ function Properties() {
       selectedObject.applyFilters();
       canvas.setActiveObject(selectedObject);
       canvas.requestRenderAll();
+      markAsModified();
     } catch (error) {
       console.error("Failed to apply image filter:", error);
     }
@@ -440,31 +449,149 @@ function Properties() {
 
       selectedObject.applyFilters();
       canvas.requestRenderAll();
+      markAsModified();
     } catch (error) {
       console.error("Error while applying blur:", error);
     }
   };
 
-  if (!selectedObject && !isPinned) return null;
+  const handleClose = () => {
+    setIsPinned(false);
+    setSelectedObject(null);
+    if (canvas) {
+      canvas.discardActiveObject();
+      canvas.requestRenderAll();
+    }
+  };
+
+  const handleSetAsBackground = () => {
+    if (!canvas || !selectedObject || selectedObject.type !== "image") return;
+
+    const canvasW = canvas.getWidth();
+    const canvasH = canvas.getHeight();
+    const imgW = selectedObject.width || 1;
+    const imgH = selectedObject.height || 1;
+    const scale = Math.max(canvasW / imgW, canvasH / imgH);
+
+    selectedObject.set({
+      scaleX: scale,
+      scaleY: scale,
+      left: (canvasW - imgW * scale) / 2,
+      top: (canvasH - imgH * scale) / 2,
+      selectable: false,
+      evented: false,
+      isCanvasBackground: true,
+    });
+
+    canvas.sendToBack(selectedObject);
+    canvas.discardActiveObject();
+    canvas.requestRenderAll();
+    setSelectedObject(null);
+    setIsPinned(false);
+  };
+
+  const handleDetachBackground = () => {
+    if (!canvas) return;
+    const targetObj = selectedObject?.isCanvasBackground
+      ? selectedObject
+      : canvas.getObjects().find((o) => o.isCanvasBackground);
+    if (!targetObj) return;
+
+    targetObj.set({
+      selectable: true,
+      evented: true,
+      isCanvasBackground: false,
+    });
+    canvas.setActiveObject(targetObj);
+    canvas.requestRenderAll();
+    setSelectedObject(targetObj);
+  };
+
+  const handleRemoveBackground = () => {
+    if (!canvas) return;
+    const targetObj = selectedObject?.isCanvasBackground
+      ? selectedObject
+      : canvas.getObjects().find((o) => o.isCanvasBackground);
+    if (!targetObj) return;
+
+    canvas.remove(targetObj);
+    canvas.discardActiveObject();
+    canvas.requestRenderAll();
+    setSelectedObject(null);
+  };
+
+  const handleToggleLock = () => {
+    if (!canvas || !selectedObject) return;
+    selectedObject.set({
+      selectable: false,
+      evented: false,
+    });
+    canvas.discardActiveObject();
+    canvas.requestRenderAll();
+    setSelectedObject(null);
+    setIsPinned(false);
+  };
+
+  const hasBgImage = canvas?.getObjects?.()?.some((o) => o.isCanvasBackground);
+
+  if (!selectedObject && !isPinned && !hasBgImage) return null;
 
   return (
-    <div className="fixed right-0 top-14 bottom-0 w-72 bg-white border border-gray-200 z-10 flex flex-col">
+    <div className="fixed right-0 top-14 bottom-0 w-72 bg-white border border-gray-200 z-10 flex flex-col shadow-lg">
       <div className="flex items-center justify-between p-3 border-b shrink-0">
-        <span className="font-medium">Properties</span>
+        <span className="font-medium">{selectedObject ? "Properties" : "Canvas Background"}</span>
 
-        <Button
-          variant={isPinned ? "secondary" : "ghost"}
-          size="icon"
-          className="h-8 w-8"
-          onClick={() => setIsPinned((prev) => !prev)}
-          title={isPinned ? "Unpin panel" : "Pin panel"}
-        >
-          {isPinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button
+            variant={isPinned ? "secondary" : "ghost"}
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => setIsPinned((prev) => !prev)}
+            title={isPinned ? "Unpin panel" : "Pin panel"}
+          >
+            {isPinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-gray-500 hover:text-gray-900"
+            onClick={handleClose}
+            title="Close properties"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       {!selectedObject ? (
-        <div className="p-4 text-sm text-gray-500">Select an object to edit its properties.</div>
+        <div className="p-4 space-y-4">
+          {hasBgImage ? (
+            <div className="space-y-3">
+              <p className="text-xs text-gray-500">A photo is applied as the canvas background.</p>
+              <div className="flex flex-col gap-2 pt-1">
+                <Button
+                  onClick={handleDetachBackground}
+                  variant="outline"
+                  size="sm"
+                  className="w-full text-xs"
+                >
+                  Detach Image from Background
+                </Button>
+                <Button
+                  onClick={handleRemoveBackground}
+                  variant="destructive"
+                  size="sm"
+                  className="w-full text-xs"
+                >
+                  Remove Background Image
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="text-sm text-gray-500">Select an object to edit its properties.</div>
+          )}
+        </div>
       ) : (
         <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-6">
           <h3 className="text-sm font-medium">Size & Position</h3>
@@ -903,6 +1030,30 @@ function Properties() {
                   />
                 </div>
               )}
+
+              <div className="pt-2 flex flex-col gap-2 border-t">
+                <Button
+                  onClick={handleSetAsBackground}
+                  variant="outline"
+                  size="sm"
+                  className="w-full text-xs flex items-center justify-center gap-1.5"
+                  title="Make this photo fill the canvas and lock as background"
+                >
+                  <Maximize2 className="h-3.5 w-3.5" />
+                  <span>Set as Canvas Background</span>
+                </Button>
+
+                <Button
+                  onClick={handleToggleLock}
+                  variant="outline"
+                  size="sm"
+                  className="w-full text-xs flex items-center justify-center gap-1.5 text-gray-600"
+                  title="Lock this image so clicking canvas won't select it"
+                >
+                  <Lock className="h-3.5 w-3.5" />
+                  <span>Lock Image</span>
+                </Button>
+              </div>
             </div>
           )}
 

@@ -12,7 +12,7 @@ import { centerCanvas } from "@/fabric/fabric-utils";
 
 function SettingsPanel() {
   const [backgroundColor, setBackgroundColor] = useState("#ffffff");
-  const { canvas } = useEditorStore();
+  const { canvas, markAsModified } = useEditorStore();
 
   const handleColorChange = (event) => {
     setBackgroundColor(event.target.value);
@@ -28,6 +28,7 @@ function SettingsPanel() {
     canvas.renderAll();
 
     centerCanvas(canvas);
+    markAsModified();
   };
 
   return (
@@ -93,6 +94,49 @@ function SettingsPanel() {
         <Button className="w-full" onClick={handleApplyChanges}>
           Apply Changes
         </Button>
+
+        {canvas?.getObjects?.()?.some((o) => o.isCanvasBackground) && (
+          <div className="pt-4 border-t space-y-2">
+            <h4 className="text-sm font-semibold text-gray-800">Background Image</h4>
+            <p className="text-xs text-gray-500">A photo is applied as canvas background.</p>
+            <div className="flex flex-col gap-2 pt-1">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-full text-xs"
+                onClick={() => {
+                  const bg = canvas.getObjects().find((o) => o.isCanvasBackground);
+                  if (!bg) return;
+                  bg.set({
+                    selectable: true,
+                    evented: true,
+                    isCanvasBackground: false,
+                  });
+                  canvas.setActiveObject(bg);
+                  canvas.requestRenderAll();
+                }}
+              >
+                Detach from Background
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                className="w-full text-xs"
+                onClick={() => {
+                  const bg = canvas.getObjects().find((o) => o.isCanvasBackground);
+                  if (!bg) return;
+                  canvas.remove(bg);
+                  canvas.discardActiveObject();
+                  canvas.requestRenderAll();
+                }}
+              >
+                Remove Background Image
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

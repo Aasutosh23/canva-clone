@@ -6,7 +6,12 @@ export const initializeFabric = async (canvasEl, containerEl) => {
     const fabricModule = await import("fabric");
     const fabric = fabricModule.fabric;
 
+    const width = canvasEl.width || 825;
+    const height = canvasEl.height || 465;
+
     const canvas = new fabric.Canvas(canvasEl, {
+      width,
+      height,
       preserveObjectStacking: true,
       isDrawingMode: false,
       renderOnAddRemove: true,
@@ -32,10 +37,13 @@ export const centerCanvas = (canvas) => {
   canvasWrapper.style.width = `${canvas.width}px`;
   canvasWrapper.style.height = `${canvas.height}px`;
 
-  canvasWrapper.style.position = "absolute";
-  canvasWrapper.style.top = "50%";
-  canvasWrapper.style.left = "50%";
-  canvasWrapper.style.transform = "translate(-50%, -50%)";
+  canvasWrapper.style.position = "relative";
+  canvasWrapper.style.margin = "auto";
+  canvasWrapper.style.top = "";
+  canvasWrapper.style.left = "";
+  canvasWrapper.style.transform = "";
+
+  canvas.calcOffset();
 };
 
 export const addShapeToCanvas = async (canvas, shapeType, customProps = {}) => {
@@ -149,6 +157,7 @@ export const addImageToCanvas = async (canvas, imageUrl) => {
 
     canvas.add(image);
     canvas.setActiveObject(image);
+    canvas.calcOffset();
     canvas.requestRenderAll();
 
     return image;
@@ -271,5 +280,37 @@ export const deletedSelectedObject = async (canvas) => {
   } catch (e) {
     console.error("Error while deleting", e);
     return false;
+  }
+};
+
+export const customizeBoundingBox = (canvas) => {
+  if (!canvas) return;
+
+  try {
+    canvas.on("object:added", (e) => {
+      if (e.target) {
+        e.target.set({
+          borderColor: "#2196f3",
+          cornerColor: "#ffffff",
+          cornerStrokeColor: "#2196f3",
+          cornerSize: 10,
+          transparentCorners: false,
+        });
+      }
+    });
+
+    canvas.getObjects().forEach((obj) => {
+      obj.set({
+        borderColor: "#2196f3",
+        cornerColor: "#ffffff",
+        cornerStrokeColor: "#2196f3",
+        cornerSize: 10,
+        transparentCorners: false,
+      });
+    });
+
+    canvas.renderAll();
+  } catch (e) {
+    console.error("Failed to customize boundingbox");
   }
 };
