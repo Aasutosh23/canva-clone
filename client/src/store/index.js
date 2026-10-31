@@ -17,6 +17,9 @@ export const useEditorStore = create((set, get) => ({
   designId: null,
   setDesignId: (id) => set({ designId: id }),
 
+  isCanvasLoading: false,
+  setIsCanvasLoading: (flag) => set({ isCanvasLoading: flag }),
+
   isEditing: true,
   setIsEditing: (flag) => set({ isEditing: flag }),
 
@@ -40,12 +43,13 @@ export const useEditorStore = create((set, get) => ({
   triggerCenterCanvas: () =>
     set((state) => ({ centerCanvasTrigger: state.centerCanvasTrigger + 1 })),
 
-  saveStatus: "saved",
+  saveStatus: "Saved",
   setSaveStatus: (status) => set({ saveStatus: status }),
   lastModified: Date.now(),
   isModified: false,
 
   markAsModified: () => {
+    if (get().isCanvasLoading) return;
     const designId = get().designId;
 
     if (designId) {
@@ -62,6 +66,7 @@ export const useEditorStore = create((set, get) => ({
   },
 
   saveToServer: async () => {
+    if (get().isCanvasLoading) return null;
     const designId = get().designId;
     const canvas = get().canvas;
 
@@ -86,13 +91,33 @@ export const useEditorStore = create((set, get) => ({
 
   debounceSaveToServer: debounce(() => {
     get().saveToServer();
-  }, 500),
+  }, 800),
+
+  userSubscription: null,
+  setUserSubscription: (data) => set({ userSubscription: data }),
+
+  userDesigns: [],
+  setUserDesigns: (data) => set({ userDesigns: data }),
+
+  deletedDesigns: [],
+  setDeletedDesigns: (data) => set({ deletedDesigns: data }),
+
+  showPremiumModal: false,
+  setShowPremiumModal: (flag) => set({ showPremiumModal: flag }),
+
+  showDesignsModal: false,
+  setShowDesignsModal: (flag) => set({ showDesignsModal: flag }),
+
+  showTrashModal: false,
+  setShowTrashModal: (flag) => set({ showTrashModal: flag }),
 
   resetStore: () => {
+    get().debounceSaveToServer?.cancel?.();
     set({
       canvas: null,
       designId: null,
       isEditing: true,
+      isCanvasLoading: false,
       name: "Untitled Design",
       showProperties: false,
       zoomLevel: 1,

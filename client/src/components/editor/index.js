@@ -9,6 +9,7 @@ import { useEditorStore } from "@/store";
 import { getUserDesignById } from "@/services/design-service";
 import Properties from "./properties";
 import { useSession } from "next-auth/react";
+import SubscriptionModal from "../subscription/premium-modal";
 
 function MainEditor() {
   const params = useParams();
@@ -20,8 +21,17 @@ function MainEditor() {
   const [loadAttempted, setLoadAttempted] = useState(false);
   const [error, setError] = useState(null);
 
-  const { canvas, setDesignId, resetStore, setName, setShowProperties, showProperties, isEditing } =
-    useEditorStore();
+  const {
+    canvas,
+    setDesignId,
+    resetStore,
+    setName,
+    setShowProperties,
+    isEditing,
+    setShowPremiumModal,
+    showPremiumModal,
+    setIsCanvasLoading,
+  } = useEditorStore();
 
   useEffect(() => {
     resetStore();
@@ -31,7 +41,7 @@ function MainEditor() {
     return () => {
       resetStore();
     };
-  }, []);
+  }, [designId]);
 
   useEffect(() => {
     setLoadAttempted(false);
@@ -58,6 +68,7 @@ function MainEditor() {
     try {
       setIsLoading(true);
       setLoadAttempted(true);
+      setIsCanvasLoading(true);
 
       const response = await getUserDesignById(designId);
       const design = response?.data;
@@ -94,6 +105,7 @@ function MainEditor() {
             if (!hasObjects) {
               canvas.renderAll();
               useEditorStore.getState().triggerCenterCanvas();
+              setIsCanvasLoading(false);
               return;
             }
 
@@ -102,6 +114,9 @@ function MainEditor() {
               canvas.setHeight(height);
               canvas.renderAll();
               useEditorStore.getState().triggerCenterCanvas();
+              setTimeout(() => {
+                setIsCanvasLoading(false);
+              }, 200);
             });
           } else {
             canvas.clear();
@@ -110,21 +125,26 @@ function MainEditor() {
             canvas.backgroundColor = "#ffffff";
             canvas.renderAll();
             useEditorStore.getState().triggerCenterCanvas();
+            setIsCanvasLoading(false);
           }
         } catch (e) {
           console.error("Error loading canvas", e);
           setError("Error loading canvas");
+          setIsCanvasLoading(false);
         } finally {
           setIsLoading(false);
           useEditorStore.getState().triggerCenterCanvas();
         }
+      } else {
+        setIsCanvasLoading(false);
       }
     } catch (e) {
       console.error("Failed to load design", e);
       setLoadAttempted(false);
       setIsLoading(false);
+      setIsCanvasLoading(false);
     }
-  }, [canvas, designId, loadAttempted, status, session?.idToken, setDesignId, setName]);
+  }, [canvas, designId, loadAttempted, status, session?.idToken, setDesignId, setName, setIsCanvasLoading]);
 
   useEffect(() => {
     if (status === "loading") return;
@@ -177,6 +197,8 @@ function MainEditor() {
         </div>
       </div>
       {isEditing && <Properties />}
+
+      <SubscriptionModal isOpen={showPremiumModal} onClose={setShowPremiumModal} />
     </div>
   );
 }

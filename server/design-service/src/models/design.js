@@ -7,6 +7,10 @@ const DesignSchema = new mongoose.Schema({
   width: Number,
   height: Number,
   category: String,
+  deletedAt: {
+    type: Date,
+    default: null,
+  },
   createdAt: {
     type: Date,
     default: Date.now(),

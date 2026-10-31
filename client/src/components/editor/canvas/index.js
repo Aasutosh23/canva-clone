@@ -1,6 +1,6 @@
 "use client";
 
-import { initializeFabric } from "@/fabric/fabric-utils";
+import { customizeBoundingBox, initializeFabric } from "@/fabric/fabric-utils";
 import { useEditorStore } from "@/store";
 import { useEffect, useRef, useState } from "react";
 import ZoomToolbar from "./zoom-toolbar";
@@ -123,6 +123,9 @@ function Canvas() {
         objs.forEach((o) => fc.remove(o));
         fc.discardActiveObject();
         fc.renderAll();
+        if (!useEditorStore.getState().isCanvasLoading) {
+          markAsModified();
+        }
       }
     };
 
@@ -208,7 +211,7 @@ function Canvas() {
       window.removeEventListener("mouseup", onMouseUp);
       container.removeEventListener("wheel", onWheel);
     };
-  }, [setZoomLevel]);
+  }, [setZoomLevel, markAsModified]);
 
   useEffect(() => {
     const cleanUpCanvas = () => {
@@ -242,6 +245,8 @@ function Canvas() {
         fabricCanvasRef.current = fabricCanvas;
         setCanvas(fabricCanvas);
 
+        customizeBoundingBox(fabricCanvas);
+
         requestAnimationFrame(() => {
           centerInContainer(zoomRef.current);
         });
@@ -250,20 +255,25 @@ function Canvas() {
         }, 150);
 
         fabricCanvas.on("object:added", () => {
+          if (useEditorStore.getState().isCanvasLoading) return;
           markAsModified();
         });
 
         fabricCanvas.on("object:modified", () => {
+          if (useEditorStore.getState().isCanvasLoading) return;
           markAsModified();
         });
 
         fabricCanvas.on("object:removed", () => {
+          if (useEditorStore.getState().isCanvasLoading) return;
           markAsModified();
         });
 
         fabricCanvas.on("path:created", () => {
+          if (useEditorStore.getState().isCanvasLoading) return;
           markAsModified();
         });
+
         fabricCanvas.on("mouse:down", (opt) => {
           if (isSpaceRef.current) return;
 
@@ -295,7 +305,7 @@ function Canvas() {
       clearTimeout(timer);
       cleanUpCanvas();
     };
-  }, []);
+  }, [setCanvas, markAsModified]);
 
   return (
     <div className="canvas-workspace">

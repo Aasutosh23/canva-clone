@@ -24,6 +24,22 @@ export async function deleteDesign(designId) {
   });
 }
 
+export async function getTrashedDesigns() {
+  return fetchWithAuth("/v1/designs/trash");
+}
+
+export async function recoverDesign(designId) {
+  return fetchWithAuth(`/v1/designs/${designId}/recover`, {
+    method: "PATCH",
+  });
+}
+
+export async function permanentlyDeleteDesign(designId) {
+  return fetchWithAuth(`/v1/designs/${designId}/permanent`, {
+    method: "DELETE",
+  });
+}
+
 export async function saveCanvasState(canvas, designId = null, title = "Untitled Design") {
   if (!canvas) return false;
 

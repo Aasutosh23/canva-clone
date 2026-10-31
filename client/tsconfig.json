@@ -28,6 +28,6 @@
   "**/*.ts",
   "**/*.tsx",
   "src/app/editor/[slug]/page.js"
- ],
+, "src/components/home/design-list.js" ],
  "exclude": ["node_modules"]
 }

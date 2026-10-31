@@ -4,7 +4,8 @@ exports.getUserDesigns = async (req, res) => {
   try {
     const userId = req.user.userId;
 
-    const designs = await Design.find({ userId }).sort({ updatedAt: -1 });
+    // Only return non-deleted designs
+    const designs = await Design.find({ userId, deletedAt: null }).sort({ updatedAt: -1 });
 
     return res.status(200).json({
       success: true,
@@ -24,7 +25,7 @@ exports.getUserDesignsByID = async (req, res) => {
     const userId = req.user.userId;
     const designId = req.params.id;
 
-    const design = await Design.findOne({ _id: designId, userId });
+    const design = await Design.findOne({ _id: designId, userId, deletedAt: null });
 
     if (!design) {
       return res.status(404).json({
@@ -51,7 +52,7 @@ exports.saveDesign = async (req, res) => {
     const userId = req.user.userId;
     const { designId, name, canvasData, width, height, category } = req.body;
     if (designId) {
-      const design = await Design.findOne({ _id: designId, userId });
+      const design = await Design.findOne({ _id: designId, userId, deletedAt: null });
       if (!design) {
         return res.status(404).json({
           success: false,
@@ -97,11 +98,12 @@ exports.saveDesign = async (req, res) => {
   }
 };
 
+// Soft delete — moves to trash
 exports.deleteDesign = async (req, res) => {
   try {
     const userId = req.user.userId;
     const designId = req.params.id;
-    const design = await Design.findOne({ _id: designId, userId });
+    const design = await Design.findOne({ _id: designId, userId, deletedAt: null });
 
     if (!design) {
       return res.status(404).json({
@@ -110,17 +112,100 @@ exports.deleteDesign = async (req, res) => {
       });
     }
 
-    await Design.deleteOne({ _id: designId });
+    design.deletedAt = new Date();
+    await design.save();
 
     res.status(200).json({
       success: true,
-      message: "Design deleted successfully",
+      message: "Design moved to trash",
     });
   } catch (e) {
     console.error("Error while deleting design", e);
     res.status(500).json({
       success: false,
       message: "Failed to delete design",
+    });
+  }
+};
+
+// Get all trashed designs
+exports.getTrashedDesigns = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+
+    const designs = await Design.find({ userId, deletedAt: { $ne: null } }).sort({ deletedAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      data: designs,
+    });
+  } catch (e) {
+    console.error("Error fetching trashed designs", e);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch trashed designs",
+    });
+  }
+};
+
+// Recover a trashed design
+exports.recoverDesign = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const designId = req.params.id;
+
+    const design = await Design.findOne({ _id: designId, userId, deletedAt: { $ne: null } });
+
+    if (!design) {
+      return res.status(404).json({
+        success: false,
+        message: "Design not found in trash.",
+      });
+    }
+
+    design.deletedAt = null;
+    design.updatedAt = Date.now();
+    await design.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Design recovered successfully",
+    });
+  } catch (e) {
+    console.error("Error while recovering design", e);
+    res.status(500).json({
+      success: false,
+      message: "Failed to recover design",
+    });
+  }
+};
+
+// Permanently delete a trashed design
+exports.permanentlyDeleteDesign = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const designId = req.params.id;
+
+    const design = await Design.findOne({ _id: designId, userId, deletedAt: { $ne: null } });
+
+    if (!design) {
+      return res.status(404).json({
+        success: false,
+        message: "Design not found in trash.",
+      });
+    }
+
+    await Design.deleteOne({ _id: designId });
+
+    res.status(200).json({
+      success: true,
+      message: "Design permanently deleted",
+    });
+  } catch (e) {
+    console.error("Error while permanently deleting design", e);
+    res.status(500).json({
+      success: false,
+      message: "Failed to permanently delete design",
     });
   }
 };

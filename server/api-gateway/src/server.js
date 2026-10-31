@@ -105,7 +105,7 @@ app.use(
   authMiddleware,
   proxy(process.env.SUBSCRIPTION, {
     ...proxyOptions,
-    parseReqBody: false,
+    parseReqBody: true,
   })
 );
 
