@@ -24,6 +24,8 @@ async function refreshIdToken(refreshToken) {
 }
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
+  trustHost: true,
+
   providers: [
     Google({
       authorization: {
@@ -34,6 +36,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       },
     }),
   ],
+
   callbacks: {
     async jwt({ token, account }) {
       if (account) {
