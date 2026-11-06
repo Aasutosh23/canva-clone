@@ -9,6 +9,10 @@ const mediaSchema = new mongoose.Schema({
   size: Number,
   width: Number,
   height: Number,
+  isAiGenerated: {
+    type: Boolean,
+    default: false,
+  },
   createdAt: {
     type: Date,
     default: Date.now,

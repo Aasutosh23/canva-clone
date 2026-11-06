@@ -111,6 +111,10 @@ export const useEditorStore = create((set, get) => ({
   showTrashModal: false,
   setShowTrashModal: (flag) => set({ showTrashModal: flag }),
 
+  // AI Panel — persist generated image so it survives tab switches
+  aiGeneratedContent: null,
+  setAiGeneratedContent: (content) => set({ aiGeneratedContent: content }),
+
   resetStore: () => {
     get().debounceSaveToServer?.cancel?.();
     set({

@@ -8,6 +8,10 @@ import { useEditorStore } from "@/store";
 import { Loader2, Trash2, Upload } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
+
+const MAX_FILE_SIZE_MB = 50;
+const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
 function UploadPanel() {
   const { canvas } = useEditorStore();
@@ -24,10 +28,10 @@ function UploadPanel() {
     try {
       setIsLoading(true);
       const data = await fetchWithAuth("/v1/media/get");
-      console.log(data);
       setUserUploads(data?.data || []);
     } catch (e) {
       console.log("fetchUserUploads error:", e);
+      toast.error("Failed to load uploads");
     } finally {
       setIsLoading(false);
     }
@@ -38,19 +42,25 @@ function UploadPanel() {
   }, [status, fetchUserUploads]);
 
   const handleFileUpload = async (e) => {
-    console.log(e.target.files);
     const file = e.target.files[0];
+    if (!file) return;
+
+    // Client-side file size check
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      toast.error(`File too large. Maximum size is ${MAX_FILE_SIZE_MB}MB.`);
+      e.target.value = "";
+      return;
+    }
 
     setIsUploading(true);
 
     try {
       const result = await uploadFileWithAuth(file);
-
       setUserUploads((prev) => [result?.data, ...prev]);
-
-      console.log(result);
+      toast.success("Image uploaded successfully!");
     } catch (e) {
       console.error("Error while uploading the file:", e);
+      toast.error(e.message || "Upload failed. Please try again.");
     } finally {
       setIsUploading(false);
       e.target.value = "";
@@ -63,7 +73,7 @@ function UploadPanel() {
   };
 
   const handleDeleteUpload = async (e, imageId) => {
-    e.stopPropagation(); // prevent triggering handleAddImage
+    e.stopPropagation();
     if (deletingIds.has(imageId)) return;
 
     setDeletingIds((prev) => new Set(prev).add(imageId));
@@ -71,8 +81,10 @@ function UploadPanel() {
     try {
       await fetchWithAuth(`/v1/media/delete/${imageId}`, { method: "DELETE" });
       setUserUploads((prev) => prev.filter((img) => img._id !== imageId));
+      toast.success("Upload deleted");
     } catch (err) {
       console.error("Error deleting upload:", err);
+      toast.error("Failed to delete upload");
     } finally {
       setDeletingIds((prev) => {
         const next = new Set(prev);
@@ -82,16 +94,18 @@ function UploadPanel() {
     }
   };
 
-  console.log(userUploads, "userUploads");
-
   return (
     <div className="h-full overflow-y-auto">
       <div className="p-4 space-y-4">
         <div className="flex gap-2">
           <Label
-            className={`w-full flex items-center justify-center gap-2 py-3 px-4 bg-purple-600 hover:bg-purple-700 text-white rounded-md cursor-pointer h-12 font-medium transition-colors ${isUploading ? "opacity-70 cursor-not-allowed" : ""}`}
+            className={`w-full flex items-center justify-center gap-2 py-3 px-4 bg-purple-600 hover:bg-purple-700 text-white rounded-md cursor-pointer h-12 font-medium transition-colors ${isUploading ? "opacity-70 cursor-not-allowed pointer-events-none" : ""}`}
           >
-            <Upload className="w-5 h-5" />
+            {isUploading ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <Upload className="w-5 h-5" />
+            )}
             <span>{isUploading ? "Uploading..." : "Upload Files"}</span>
             <Input
               type="file"
@@ -102,11 +116,12 @@ function UploadPanel() {
             />
           </Label>
         </div>
+        <p className="text-xs text-gray-400">Max file size: {MAX_FILE_SIZE_MB}MB</p>
         <div className="mt-5">
           <h4 className="text-sm text-gray-500 mb-5">Your Uploads</h4>
           {isLoading ? (
-            <div className="border p-6 flex rounded-md items-center justify-center">
-              <Loader2 className="w-4 h-4" />
+            <div className="border p-6 flex gap-2 rounded-md items-center justify-center">
+              <Loader2 className="w-4 h-4 animate-spin" />
               <p className="font-bold text-sm">Loading your uploads...</p>
             </div>
           ) : userUploads.length > 0 ? (
@@ -139,7 +154,7 @@ function UploadPanel() {
               ))}
             </div>
           ) : (
-            <div>No Uploads yet</div>
+            <div className="text-sm text-gray-400">No uploads yet</div>
           )}
         </div>
       </div>

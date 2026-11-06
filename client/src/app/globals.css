@@ -116,16 +116,42 @@
 }
 
 @layer base {
+  html {
+    font-size: 16px;
+  }
+
   * {
     @apply border-border outline-ring/50;
-    font-family: "Comic Sans MS", cursive;
-    font-weight: 500;
+    font-family: var(--font-jakarta), "Outfit", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-weight: 400;
   }
 
   body {
     @apply bg-background text-foreground;
-    font-family: "Comic Sans MS", cursive;
+    font-family: var(--font-jakarta), "Outfit", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-weight: 400;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3 {
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  h4, h5, h6 {
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  p, span, label {
+    font-weight: 400;
+    line-height: 1.6;
+  }
+
+  button {
     font-weight: 500;
+    letter-spacing: 0.01em;
   }
 }
 
@@ -564,8 +590,6 @@
   margin: 0 4px;
   flex-shrink: 0;
 }
-
-
 
 .zoom-pan-hint {
   display: flex;
