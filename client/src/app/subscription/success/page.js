@@ -3,7 +3,7 @@
 import { capturePaypalOrder } from "@/services/subscription-service";
 import { CheckCircle2, Loader2, XCircle } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { useEditorStore } from "@/store";
 
@@ -93,4 +93,12 @@ function SubscriptionSuccess() {
   );
 }
 
-export default SubscriptionSuccess;
+export default function SubscriptionSuccessPage() {
+  return (
+    <Suspense
+      fallback={<div className="flex min-h-screen items-center justify-center">Loading...</div>}
+    >
+      <SubscriptionSuccess />
+    </Suspense>
+  );
+}
