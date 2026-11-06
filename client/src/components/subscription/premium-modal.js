@@ -32,7 +32,7 @@ function SubscriptionModal({ isOpen, onClose }) {
               <>
                 <DialogTitle className={"text-2xl font-bold mb-4 flex items-center"}>
                   <Sparkles className="h-6 w-6 text-yellow-500 mr-2" />
-                  You're a premium Member!
+                  You&apos;re a premium Member!
                 </DialogTitle>
 
                 <div className="bg-green-50 border border-green-100 rounded-lg p-4 mb-6">
